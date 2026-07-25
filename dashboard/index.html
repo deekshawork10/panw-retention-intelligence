@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PANW GCS - Retention Intelligence Dashboard</title>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --accent-red: #e11d48;
+            --accent-green: #10b981;
+            --accent-blue: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .brand span {
+            color: var(--accent-red);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-red);
+            color: var(--text-main);
+        }
+
+        .grid-kpi {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .kpi-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .kpi-sub {
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .text-green { color: var(--accent-green); }
+        .text-red { color: var(--accent-red); }
+
+        .sentinel-panel {
+            background: var(--bg-card);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            color: var(--text-muted);
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 500;
+        }
+
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-danger { background: rgba(225, 29, 72, 0.2); color: var(--accent-red); }
+        .badge-success { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+
+        .action-btn {
+            background: #334155;
+            color: var(--text-main);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-blue);
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="brand">PALO ALTO NETWORKS <span>| GCS Retention Intelligence</span></div>
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchView('sentinel')">Rolling KPI Sentinel</button>
+            <button class="tab-btn" onclick="switchView('executive')">Executive Snapshot (Q4)</button>
+        </div>
+    </div>
+
+    <div class="grid-kpi">
+        <div class="kpi-card">
+            <div class="kpi-label">Total Contracted ARR</div>
+            <div class="kpi-value">$42.8M</div>
+            <div class="kpi-sub text-muted">Booked Revenue Baseline</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Activated ARR (aARR)</div>
+            <div class="kpi-value text-green">$31.2M</div>
+            <div class="kpi-sub text-green">72.8% Activation Rate</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Unactivated Risk ARR</div>
+            <div class="kpi-value text-red">$11.6M</div>
+            <div class="kpi-sub text-red">Under-utilized / Shelfware</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Agentic Interventions</div>
+            <div class="kpi-value">14 Drafts</div>
+            <div class="kpi-sub text-green">CSM Action Required</div>
+        </div>
+    </div>
+
+    <div class="sentinel-panel">
+        <div class="panel-title">
+            <span>High-Risk Accounts Requiring Activation Workflow</span>
+            <span style="font-size: 12px; color: var(--text-muted);">Anchor Evaluation Date: 2026-12-31</span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Account Name</th>
+                    <th>Region</th>
+                    <th>Contract ARR</th>
+                    <th>90d Credit Usage</th>
+                    <th>Activation Status</th>
+                    <th>Recommended AI Agent Remediation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Apex Financial Group</strong></td>
+                    <td>AMER</td>
+                    <td>$450,000</td>
+                    <td>12.4%</td>
+                    <td><span class="badge badge-danger">Unactivated</span></td>
+                    <td><button class="action-btn" onclick="alert('AI Agent Plan Drafted: Triggering CSM Onboarding Specialist for Apex Financial.')">Draft Outreach Plan</button></td>
+                </tr>
+                <tr>
+                    <td><strong>Vanguard Logistics</strong></td>
+                    <td>EMEA</td>
+                    <td>$180,000</td>
+                    <td>0.0% (Shelfware)</td>
+                    <td><span class="badge badge-danger">Unactivated</span></td>
+                    <td><button class="action-btn" onclick="alert('AI Agent Plan Drafted: Initiating Deployment Audit workflow.')">Audit Deployment</button></td>
+                </tr>
+                <tr>
+                    <td><strong>BioHealth Systems</strong></td>
+                    <td>APAC</td>
+                    <td>$620,000</td>
+                    <td>88.2%</td>
+                    <td><span class="badge badge-success">Activated</span></td>
+                    <td><button class="action-btn" style="opacity: 0.5; cursor: default;">Healthy</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function switchView(view) {
+            const btns = document.querySelectorAll('.tab-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            if(view === 'sentinel') {
+                btns[0].classList.add('active');
+            } else {
+                btns[1].classList.add('active');
+                alert("Switched to Executive Snapshot View (Locked Q4 Snapshot Mode).");
+            }
+        }
+    </script>
+</body>
+</html>
