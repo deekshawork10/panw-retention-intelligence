@@ -1,47 +1,47 @@
-# Product Specification: Activated ARR (aARR)
+# Product & Technical Specifications
 
-## Executive Summary
+**Project:** GCS Retention Intelligence Dashboard  
 
-As Palo Alto Networks (PANW) Global Customer Services (GCS) transitions toward a hybrid consumption-based model, traditional Annual Recurring Revenue (ARR) and Net Retention Rate (NRR) create operational blind spots. A customer may commit to a high annual dollar amount but fail to deploy or consume the platform, leading to sudden renewal churn.
+**Role:** Principal Product Manager Candidate
 
-**Activated ARR (aARR)** bridges financial bookings and actual platform consumption into a single health-aware metric.
+## 1. Executive Summary
 
----
+Standard SaaS retention metrics (NRR, DBNRR) are lagging indicators. By the time Net Revenue Retention drops, the customer has already churned. This product introduces an **agentic AI pipeline** and operational dashboard designed to transition Customer Success from reactive reporting to proactive intervention. It isolates unactivated recurring revenue and automates workflows to prevent churn before it impacts the bottom line.
 
-## Metric Definition & Mathematical Logic
+## 2. Core Metrics & KPI Evaluation
 
-An account's total ARR is recognized as **Activated ARR (aARR)** only if the customer crosses a sustained consumption gate over a rolling 90-day evaluation window.
+To accurately evaluate product adoption and account health, we leverage the following metric hierarchy:
 
-### Primary Activation Formula
+*   **Portfolio Contracted ARR:** The total annualized value of all active contracts as of a dynamic snapshot date.
 
-$$\text{Activated ARR} = \begin{cases} \text{Contracted ARR}, & \text{if } \frac{\text{Consumption}_{90d}}{\text{Prorated Commit}_{90d}} \ge 0.50 \text{ AND } \text{Open Sev-1 Incidents} = 0 \\ 0, & \text{otherwise} \end{cases}$$
+*   **The North Star - Activated ARR (aARR):** Contracted revenue associated with accounts that have consumed ≥50% of their prorated 90-day compute credits. This is our leading indicator for future NRR.
 
-Where:
+*   **Unactivated Risk ARR:** Revenue falling below the 50% activation threshold, mathematically modeled as high churn risk.
 
-* **$\text{Consumption}_{90d}$**: Total compute credits consumed in `Daily_Usage_Logs` over the trailing 90 days.
+*   **CSM Pulse (Qualitative):** Manual account health scores (Green, Yellow, Red) inputted by Customer Success Managers.
 
-* **$\text{Prorated Commit}_{90d}$**: $\left(\frac{\text{Included Monthly Compute Credits}}{30}\right) \times 90$
+## 3. Agentic Workflow & Anomaly Detection
 
----
+The pipeline acts as a Sentinel, constantly evaluating the quantitative `System Status` against the qualitative `CSM Pulse`. The AI Agent dynamically routes interventions based on specific anomaly patterns:
 
-## Edge Case Handling & Routing Rules
+1.  **The "Watermelon" Account (Critical Data Discrepancy):** 
 
-| Edge Case Anomaly | System Behavior & Metric Impact | Operational Routing |
+    *   *Trigger:* System Usage = 0% AND CSM Pulse = Green. 
 
-| :--- | :--- | :--- |
+    *   *Agent Action:* Triggers a Data Integrity Audit via RevOps. This catches "false positive" accounts that appear healthy to the CSM but are quietly churning.
 
-| **Shelfware** (0 usage logs) | `aARR = $0`. Full ARR flagged as "Unactivated Risk". | Automated alert assigned to CSM for immediate onboarding intervention. |
+2.  **Spike & Drop:**
 
-| **Spike & Drop** | Trailing 90-day window dampens single-day spikes. Transient bursts fail to activate the 90-day threshold. | Health score flagged with "Unsustained Burst". |
+    *   *Trigger:* Historical usage was high, but recent 90-day trailing usage dropped severely.
 
-| **Mid-Year Expansion** | Overlapping contracts are merged. Timeframes combine, and total commit credits are aggregated. | Prorated baseline updates dynamically in BigQuery pipeline. |
+    *   *Agent Action:* Escalates directly to a Technical Account Manager (TAM) to review migration logs for technical blockers.
 
-| **Orphaned Usage** | Usage logs with non-existent `account_id`s are quarantined by Data Quality test assertions `02_data_quality_tests.sql`). | Quarantined in `stg_orphaned_usage` table for Analytics Engineering triage. |
+3.  **Shelfware:**
 
----
+    *   *Trigger:* 0% utilization with a Red/Yellow CSM Pulse.
 
-## Governance & Dual-View Architecture
+    *   *Agent Action:* Initiates a deployment audit workflow for the CSM.
 
-1. **Executive Snapshot (Finance/Leadership):** Locked quarterly reporting window. Changes to usage after quarter-close do not alter historical closed comp/churn snapshots.
+## 4. Technical Data Pipeline
 
-2. **KPI Sentinel (CSM Operational View):** Live rolling 30/90-day evaluation. Triggers real-time AI remediation workflows for accounts dropping below the 50% activation line.
+The backend is powered by a Python ETL engine `agent_api.py`) that joins five relational CSV datasets (~250,000 total rows) in real-time. It supports dynamic time-series querying, allowing leadership to roll the pipeline back to specific quarters (Q1-Q4) to view historical quarter-over-quarter trend data.
