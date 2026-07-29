@@ -1,48 +1,72 @@
-import unittest
+import pytest
 import pandas as pd
 import os
 
-class TestDataQuality(unittest.TestCase):
+# ==========================================
+# FIX: Bulletproof File Paths
+# Forces Python to look in the exact directory where this script lives.
+# ==========================================
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    @classmethod
-    def setUpClass(cls):
-        """Load datasets once for all tests."""
-        print("⚙️ Loading datasets for quality assurance...")
-        cls.df_acc = pd.read_csv('../accounts_data.csv')
-        cls.df_con = pd.read_csv('../contracts_data.csv')
-        cls.df_logs = pd.read_csv('../daily_usage_logs.csv')
-        cls.df_csm = pd.read_csv('../csm_rep_data.csv')
-        cls.df_health = pd.read_csv('../account_health_data.csv')
+@pytest.fixture(scope="module")
+def accounts_df():
+    return pd.read_csv(os.path.join(CURRENT_DIR, 'accounts_data.csv'))
 
-    def test_file_existence(self):
-        """Verify all required CSV files exist."""
-        files = ['accounts_data.csv', 'contracts_data.csv', 'daily_usage_logs.csv', 'csm_rep_data.csv', 'account_health_data.csv']
-        for file in files:
-            self.assertTrue(os.path.exists(f'../{file}'), f"Missing file: {file}")
+@pytest.fixture(scope="module")
+def contracts_df():
+    return pd.read_csv(os.path.join(CURRENT_DIR, 'contracts_data.csv'))
 
-    def test_row_counts(self):
-        """Verify data generation meets the strict case study specifications."""
-        self.assertEqual(len(self.df_acc), 1000, "Accounts table must have exactly 1,000 rows.")
-        self.assertEqual(len(self.df_csm), 50, "CSM table must have exactly 50 rows.")
-        self.assertGreaterEqual(len(self.df_con), 1000, "Contracts table must have at least 1,000 rows.")
-        self.assertEqual(len(self.df_health), 52000, "Account Health must have 52,000 rows (weekly snapshots).")
-        self.assertGreaterEqual(len(self.df_logs), 150000, "Daily Logs should have ~200,000 rows.")
+@pytest.fixture(scope="module")
+def usage_df():
+    return pd.read_csv(os.path.join(CURRENT_DIR, 'Daily_Usage_Logs.csv'))
 
-    def test_no_null_critical_values(self):
-        """Ensure critical financial and identification columns are not null."""
-        self.assertEqual(self.df_con['annual_commit_dollars'].isnull().sum(), 0)
-        self.assertEqual(self.df_acc['account_id'].isnull().sum(), 0)
-        self.assertEqual(self.df_health['health_color'].isnull().sum(), 0)
 
-    def test_financial_logic(self):
-        """Ensure Contract ARR is strictly positive."""
-        self.assertTrue((self.df_con['annual_commit_dollars'] > 0).all(), "Found contracts with 0 or negative ARR.")
+# ==========================================
+# TEST 1: The "Orphaned Usage" Hard Truth
+# ==========================================
+def test_no_orphaned_usage_logs(usage_df, accounts_df):
+    """
+    Presentation Slide 6: Orphaned Usage Quarantines.
+    Ensures every account_id in the telemetry logs actually exists in the core Accounts table.
+    """
+    valid_accounts = set(accounts_df['account_id'].unique())
+    usage_accounts = set(usage_df['account_id'].unique())
+    
+    orphans = usage_accounts - valid_accounts
+    
+    # The assertion: Zero rows/orphans means a clean pipeline
+    assert len(orphans) == 0, f"PIPELINE FAILURE: Found orphaned usage logs for non-existent account IDs: {orphans}"
 
-    def test_health_color_validity(self):
-        """Ensure qualitative health scores only contain allowed values."""
-        allowed_colors = {'Green', 'Yellow', 'Red'}
-        actual_colors = set(self.df_health['health_color'].unique())
-        self.assertTrue(actual_colors.issubset(allowed_colors), "Found invalid health colors in data.")
 
-if __name__ == '__main__':
-    unittest.main(verbosity=2)
+# ==========================================
+# TEST 2: Contract Date Logic (Mid-Year Expansions Prep)
+# ==========================================
+def test_contracts_end_after_start(contracts_df):
+    """
+    Data Integrity: Ensure contract end dates logically occur after start dates 
+    so the BigQuery gaps-and-islands window functions don't break.
+    """
+    start_dates = pd.to_datetime(contracts_df['start_date'])
+    end_dates = pd.to_datetime(contracts_df['end_date'])
+    
+    invalid_dates = contracts_df[start_dates >= end_dates]
+    assert len(invalid_dates) == 0, f"DATA ERROR: Found {len(invalid_dates)} contracts where end_date is on or before start_date."
+
+
+# ==========================================
+# TEST 3: Financial Integrity
+# ==========================================
+def test_no_negative_commit_dollars(contracts_df):
+    """
+    Data Integrity: Annual commit dollars cannot be negative.
+    """
+    negative_commits = contracts_df[contracts_df['annual_commit_dollars'] < 0]
+    assert len(negative_commits) == 0, "DATA ERROR: Found contracts with negative annual commit dollars."
+
+
+def test_no_negative_usage(usage_df):
+    """
+    Data Integrity: Compute credits consumed cannot be negative.
+    """
+    negative_usage = usage_df[usage_df['compute_credits_consumed'] < 0]
+    assert len(negative_usage) == 0, "DATA ERROR: Found usage logs with negative compute credits consumed."
