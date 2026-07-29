@@ -3,517 +3,400 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PANW GCS - Retention Intelligence Dashboard</title>
-    <!-- Import Chart.js -->
+    <title>GCS Retention Intelligence - Live Agent Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg-main: #0f172a; --bg-card: #1e293b; --accent-red: #e11d48; --accent-green: #10b981; --accent-blue: #38bdf8; --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #334155; --accent-purple: #8b5cf6; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg-main); color: var(--text-main); margin: 0; padding: 24px; }
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 0.5rem; padding: 1.25rem; }
+        .tab-active { background-color: #dc2626; color: #ffffff; border: none; }
+        .tab-inactive { background-color: #374151; color: #d1d5db; border: 1px solid #4b5563; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 24px; }
-        .brand { font-size: 20px; font-weight: 700; } .brand span { color: var(--accent-red); }
+        /* Agent UI Pulse Effect */
+        @keyframes subtle-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.85); }
+        }
+        .agent-pulse { animation: subtle-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         
-        /* TABS & NAV */
-        .nav-controls { display: flex; gap: 12px; align-items: center; }
-        .nav-tabs { display: flex; gap: 12px; background: var(--bg-card); padding: 4px; border-radius: 8px; border: 1px solid var(--border-color); }
-        .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s;}
-        .tab-btn.active { background: var(--accent-red); color: var(--text-main); }
-        
-        /* GLOSSARY BUTTON */
-        .glossary-btn { background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;}
-        .glossary-btn:hover { background: var(--border-color); color: var(--text-main); }
-
-        /* GLOBAL FILTER BAR */
-        .filter-bar { display: flex; gap: 16px; background: var(--bg-card); padding: 12px 20px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 24px; align-items: center;}
-        .filter-label { color: var(--text-muted); font-size: 13px; font-weight: 600; text-transform: uppercase; margin-right: 8px;}
-        select.filter-select { background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; outline: none; cursor: pointer; font-size: 14px; font-weight: 500;}
-        select.filter-select:hover { border-color: var(--accent-blue); }
-
-        /* MACRO KPIs */
-        .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .kpi-card { background: var(--bg-card); padding: 20px; border-radius: 10px; border: 1px solid var(--border-color); }
-        .kpi-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
-        .kpi-value { font-size: 28px; font-weight: 700; transition: color 0.3s; }
-        .kpi-sub { font-size: 12px; margin-top: 6px; }
-        
-        /* CHARTS & TRENDS */
-        .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
-        .chart-card { background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border-color); padding: 20px; }
-        .chart-wrapper { position: relative; height: 280px; width: 100%; margin-top: 16px; }
-
-        .exec-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 20px; }
-        .trend-card { background: #020617; border: 1px solid var(--border-color); padding: 24px; border-radius: 10px; text-align: center; position: relative;}
-        .trend-quarter { font-size: 16px; font-weight: bold; color: var(--accent-blue); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;}
-        .trend-stat { font-size: 24px; font-weight: bold; margin-bottom: 4px; }
-        .trend-label { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; text-transform: uppercase;}
-        .growth-badge { position: absolute; top: -10px; right: -10px; background: var(--accent-green); color: #000; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
-        .growth-badge.negative { background: var(--accent-red); color: #fff;}
-
-        /* TABLE */
-        .sentinel-panel { background: var(--bg-card); border-radius: 10px; padding: 20px; margin-bottom: 24px; }
-        .panel-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-        .table-container { max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-main); }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-        th { color: var(--text-muted); padding: 12px; font-weight: 500; position: sticky; top: 0; background: #1e293b; z-index: 10; cursor: pointer; user-select: none; transition: color 0.2s; box-shadow: 0 1px 0 var(--border-color);}
-        th:hover { color: var(--accent-blue); }
-        td { padding: 14px 12px; border-bottom: 1px solid var(--border-color); }
-        .sort-icon { display: inline-block; margin-left: 4px; font-size: 10px; opacity: 0.5; }
-        
-        /* UTILS & BUTTONS */
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-        .badge-danger { background: rgba(225, 29, 72, 0.2); color: var(--accent-red); }
-        .badge-success { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
-        .badge-warning { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
-        .text-green { color: var(--accent-green); } .text-red { color: var(--accent-red); }
-        
-        .action-btn { background: #334155; color: var(--text-main); border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        .action-btn:hover { background: var(--accent-blue); color: #000; }
-        .action-btn.disabled { opacity: 0.5; cursor: default; }
-        .agent-btn { background: var(--accent-purple); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; }
-        
-        /* TERMINAL */
-        .agent-console { background: #020617; border-radius: 10px; border: 1px solid var(--accent-purple); padding: 20px; display: none; }
-        .console-header { color: var(--accent-purple); font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .console-output { font-family: monospace; font-size: 13px; line-height: 1.6; color: var(--text-muted); white-space: pre-wrap; }
-        .log-entry { margin-top: 16px; padding-top: 16px; border-top: 1px dashed #334155; }
-        .log-highlight { color: var(--accent-blue); font-weight: bold; }
-        .log-action { color: #fcd34d; }
-        .log-draft { color: var(--text-main); padding-left: 12px; border-left: 2px solid var(--border-color); margin-top: 8px; }
-        
-        /* GLOSSARY MODAL */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; }
-        .modal-content { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 32px; width: 600px; max-width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 24px; }
-        .modal-title { font-size: 18px; font-weight: bold; color: var(--text-main); display: flex; align-items: center; gap: 8px;}
-        .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; transition: color 0.2s;}
-        .close-btn:hover { color: var(--accent-red); }
-        .term-group { margin-bottom: 20px; }
-        .term-title { font-weight: 600; color: var(--accent-blue); margin-bottom: 4px; font-size: 14px;}
-        .term-def { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+        /* Custom Scrollbar for the 362-row table */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     </style>
 </head>
-<body>
+<body class="p-6 relative">
 
-    <div class="header">
-        <div class="brand">PALO ALTO NETWORKS <span>| GCS Retention Intelligence</span></div>
-        <div class="nav-controls">
-            <div class="nav-tabs">
-                <button class="tab-btn active" onclick="switchView('executive')">Executive Historical View</button>
-                <button class="tab-btn" onclick="switchView('sentinel')">Rolling KPI Sentinel</button>
-            </div>
-            <!-- GLOSSARY BUTTON -->
-            <button class="glossary-btn" onclick="toggleGlossary()" title="Open Data Dictionary">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+    <!-- Header & Tabs -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-xl font-bold tracking-wide">
+            <span class="text-gray-300">PALO ALTO NETWORKS |</span> <span class="text-red-500">GCS Retention Intelligence</span>
+        </h1>
+        <div class="space-x-2">
+            <button id="btn-executive" onclick="switchTab('executive')" class="tab-active px-4 py-1.5 rounded text-sm font-semibold transition-colors cursor-pointer shadow-lg">
+                Executive Historical View
+            </button>
+            <button id="btn-rolling" onclick="switchTab('rolling')" class="tab-inactive px-4 py-1.5 rounded text-sm font-semibold transition-colors cursor-pointer hover:bg-gray-600">
+                Rolling KPI Sentinel
             </button>
         </div>
     </div>
 
-    <!-- GLOBAL FILTER BAR -->
-    <div class="filter-bar">
-        <span class="filter-label">
-            <svg width="14" height="14" style="margin-right: 4px; vertical-align: -2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-            Global Pipeline Filters
-        </span>
-        <select class="filter-select" id="filter-quarter" onchange="applyFilters()">
-            <option value="Q4">Q4 (Ending Dec 31)</option>
-            <option value="Q3">Q3 (Ending Sep 30)</option>
-            <option value="Q2">Q2 (Ending Jun 30)</option>
-            <option value="Q1">Q1 (Ending Mar 31)</option>
+    <!-- ACTIVE LIVE FILTERS -->
+    <div class="card mb-6 flex items-center space-x-4">
+        <span class="text-gray-400 text-sm font-semibold tracking-wider">Y GLOBAL PIPELINE FILTERS</span>
+        <select id="quarter-filter" class="bg-gray-800 text-white border border-gray-600 text-sm rounded px-3 py-1 cursor-pointer outline-none">
+            <option value="Q3 2026">Q3 (Ending Sep 30)</option>
+            <option value="Q4 2026">Q4 (Ending Dec 31)</option>
         </select>
-        <select class="filter-select" id="filter-region" onchange="applyFilters()">
-            <option value="All">All Regions</option>
-            <option value="AMER">Americas (AMER)</option>
-            <option value="EMEA">Europe, Middle East, Africa (EMEA)</option>
-            <option value="APAC">Asia Pacific (APAC)</option>
+        <select id="region-filter" class="bg-gray-800 text-white border border-gray-600 text-sm rounded px-3 py-1 cursor-pointer outline-none">
+            <option value="All Regions">All Regions</option>
+            <option value="Americas (AMER)">Americas (AMER)</option>
+            <option value="Europe, Middle East, Africa (EMEA)">Europe, Middle East, Africa (EMEA)</option>
+            <option value="Asia-Pacific (APAC)">Asia-Pacific (APAC)</option>
+            <option value="Latin America (LATAM)">Latin America (LATAM)</option>
         </select>
-        <select class="filter-select" id="filter-segment" onchange="applyFilters()">
-            <option value="All">All Segments</option>
+        <select id="segment-filter" class="bg-gray-800 text-white border border-gray-600 text-sm rounded px-3 py-1 cursor-pointer outline-none">
+            <option value="All Segments">All Segments</option>
             <option value="Enterprise">Enterprise</option>
-            <option value="Mid-Market">Mid-Market</option>
+            <option value="Commercial">Commercial</option>
         </select>
     </div>
 
-    <!-- SHARED MACRO KPIs -->
-    <div class="grid-kpi">
-        <div class="kpi-card">
-            <div class="kpi-label">Portfolio Contracted ARR</div>
-            <div class="kpi-value" id="kpi-total-arr">Loading...</div>
-            <div class="kpi-sub text-muted">Active Filter Baseline</div>
+    <!-- ========================================================= -->
+    <!-- TAB 1: EXECUTIVE HISTORICAL VIEW (LIVE API DATA)          -->
+    <!-- ========================================================= -->
+    <div id="view-executive">
+        <div class="grid grid-cols-4 gap-4 mb-6">
+            <div class="card">
+                <div class="text-xs text-gray-400 uppercase tracking-wider mb-1">Portfolio Contracted ARR</div>
+                <div id="portfolio-arr" class="text-2xl font-bold text-white">Loading...</div>
+                <div class="text-xs text-blue-400 mt-1">Active Filter Baseline</div>
+            </div>
+            <div class="card">
+                <div class="text-xs text-gray-400 uppercase tracking-wider mb-1">Activated ARR (aARR)</div>
+                <div id="activated-arr" class="text-2xl font-bold text-emerald-400">Loading...</div>
+                <div class="text-xs text-emerald-500 mt-1">Healthy & Onboarding</div>
+            </div>
+            <div class="card">
+                <div class="text-xs text-gray-400 uppercase tracking-wider mb-1">Unactivated Risk ARR</div>
+                <div id="unactivated-arr" class="text-2xl font-bold text-red-500">Loading...</div>
+                <div class="text-xs text-red-500 mt-1">Under-utilized / Shelfware</div>
+            </div>
+            <div class="card">
+                <div class="text-xs text-gray-400 uppercase tracking-wider mb-1">Agentic Interventions</div>
+                <div id="interventions" class="text-2xl font-bold text-purple-400">Loading...</div>
+                <div class="text-xs text-purple-500 mt-1">Awaiting CSM Approval</div>
+            </div>
         </div>
-        <div class="kpi-card">
-            <div class="kpi-label">Activated ARR (aARR)</div>
-            <div class="kpi-value text-green" id="kpi-active-arr">...</div>
-            <div class="kpi-sub text-green">Healthy & Onboarding</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-label">Unactivated Risk ARR</div>
-            <div class="kpi-value text-red" id="kpi-risk-arr">...</div>
-            <div class="kpi-sub text-red">Under-utilized / Shelfware</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-label">Agentic Interventions</div>
-            <div class="kpi-value" id="kpi-anomaly-count">...</div>
-            <div class="kpi-sub text-green">Awaiting CSM Approval</div>
-        </div>
-    </div>
 
-    <!-- VIEW 1: EXECUTIVE -->
-    <div id="executive-view">
-        <div class="chart-grid">
-            <div class="chart-card">
-                <div class="panel-title">Activation Velocity Trend (FY26)</div>
-                <div class="chart-wrapper"><canvas id="velocityChart"></canvas></div>
-            </div>
-            <div class="chart-card">
-                <div class="panel-title">Risk Breakdown by Anomaly</div>
-                <div class="chart-wrapper"><canvas id="anomalyChart"></canvas></div>
-            </div>
-        </div>
-        <div class="sentinel-panel">
-            <div class="panel-title">Quarter-over-Quarter Analytics Snapshot</div>
-            <div class="exec-grid" id="qoq-grid">
-                <div style="text-align: center; grid-column: span 4; color: var(--accent-blue);">Calculating historical pipeline trends...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- VIEW 2: SENTINEL -->
-    <div id="sentinel-view" style="display: none;">
-        <div class="sentinel-panel">
-            <div class="panel-title">
-                <div>
-                    <span>High-Risk Account Workflow</span>
-                    <span style="font-size: 12px; color: var(--text-muted); margin-left: 12px;">(Click column headers to sort)</span>
+        <div class="grid grid-cols-3 gap-4">
+            <div class="card col-span-2 h-80 relative">
+                <div class="text-sm font-semibold mb-2">Activation Velocity Trend (FY26)</div>
+                <div class="absolute inset-0 top-10 p-4">
+                    <canvas id="lineChartExec"></canvas>
                 </div>
-                <button class="agent-btn" onclick="triggerAgent()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    Run AI Agent Analysis
-                </button>
+            </div>
+            <div class="card col-span-1 h-80 relative">
+                <div class="text-sm font-semibold mb-2">Risk Breakdown by Anomaly</div>
+                <div class="absolute inset-0 top-10 p-4">
+                    <canvas id="pieChartExec"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TAB 2: ROLLING KPI SENTINEL & LIVE AGENT QUEUE            -->
+    <!-- ========================================================= -->
+    <div id="view-rolling" class="hidden">
+        <div class="grid grid-cols-4 gap-4 mb-6">
+            <div class="card border-l-2 border-l-blue-500 py-4">
+                <div class="text-xs text-gray-400 uppercase tracking-wider mb-1">Rolling 30-Day ARR</div>
+                <div class="text-3xl font-bold text-white mb-1">$312.50M</div>
+                <div class="text-xs text-blue-400">Live Telemetry Stream</div>
+            </div>
+            <div class="card border-l-2 border-l-emerald-500 py-4">
+                <div class="text-xs text-gray-400 uppercase tracking-wider mb-1">Real-Time Active ARR</div>
+                <div class="text-3xl font-bold text-emerald-400 mb-1">$204.80M</div>
+                <div class="text-xs text-emerald-500">+4.2% MoM Velocity</div>
+            </div>
+            <div class="card border-l-2 border-l-amber-500 py-4">
+                <div class="text-xs text-gray-400 uppercase tracking-wider mb-1">Active Sentinel Alerts</div>
+                <div class="text-3xl font-bold text-amber-400 mb-1">362 Signals</div>
+                <div class="text-xs text-amber-500">High Urgency Anomalies</div>
+            </div>
+            <div class="card border-l-2 border-l-purple-500 py-4">
+                <div class="text-xs text-gray-400 uppercase tracking-wider mb-1">Auto-Interventions Active</div>
+                <div id="rolling-interventions" class="text-3xl font-bold text-purple-300 mb-1">18 Accounts</div>
+                <div class="text-xs text-purple-400">CSM Workflow Triggered</div>
+            </div>
+        </div>
+
+        <div class="card pb-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-[15px] font-bold text-white">Live Priority Triage Queue: Continuous Agent Monitoring</h2>
+                <div class="flex items-center text-xs text-purple-300 bg-purple-900/40 border border-purple-500/50 px-3 py-1.5 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.2)]">
+                    <span class="h-2 w-2 bg-purple-400 rounded-full mr-2 agent-pulse shadow-[0_0_8px_rgba(168,85,247,0.8)]"></span>
+                    Agentic AI Online & Processing
+                </div>
             </div>
             
-            <div class="table-container">
-                <table id="data-table">
-                    <thead>
+            <div class="w-full overflow-y-auto pr-2" style="max-height: 450px;">
+                <table class="w-full text-left text-sm text-gray-300">
+                    <thead class="text-[11px] text-gray-400 uppercase border-b border-gray-700 sticky top-0 bg-[#1e293b] z-10">
                         <tr>
-                            <!-- 7 SORTABLE HEADERS + 1 ROUTING = 8 COLUMNS -->
-                            <th onclick="sortTable(0, false)">Account Name <span class="sort-icon" id="sort-icon-0">↕</span></th>
-                            <th onclick="sortTable(1, true)">Contract ARR <span class="sort-icon" id="sort-icon-1">↕</span></th>
-                            <th onclick="sortTable(2, true)">90d Credit Usage <span class="sort-icon" id="sort-icon-2">↕</span></th>
-                            <th onclick="sortTable(3, false)">System Status <span class="sort-icon" id="sort-icon-3">↕</span></th>
-                            <th onclick="sortTable(4, false)">CSM Pulse <span class="sort-icon" id="sort-icon-4">↕</span></th>
-                            <th onclick="sortTable(5, false)">Technical Health <span class="sort-icon" id="sort-icon-5">↕</span></th>
-                            <th onclick="sortTable(6, false)">Anomaly Flag <span class="sort-icon" id="sort-icon-6">↕</span></th>
-                            <th>AI Agent Routing</th>
+                            <th class="pb-3 pt-1 font-medium">Account Name</th>
+                            <th class="pb-3 pt-1 font-medium">Region</th>
+                            <th class="pb-3 pt-1 font-medium">Contracted ARR</th>
+                            <th class="pb-3 pt-1 font-medium">Health Score</th>
+                            <th class="pb-3 pt-1 font-medium">Risk Severity</th>
+                            <th class="pb-3 pt-1 font-medium">Agent Action</th>
                         </tr>
                     </thead>
-                    <tbody id="dynamic-table-body">
-                        <tr><td colspan="8" style="text-align: center;">Loading enterprise dataset...</td></tr>
+                    <tbody id="agent-triage-queue" class="divide-y divide-gray-800">
+                        <!-- Javascript will dynamically build all 362 accounts here -->
                     </tbody>
                 </table>
             </div>
         </div>
-        <div id="agent-console" class="agent-console">
-            <div class="console-header">Agent Execution Logs</div>
-            <div id="console-output" class="console-output"></div>
-        </div>
     </div>
 
-    <!-- DATA DICTIONARY MODAL -->
-    <div id="glossary-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-                    Data Dictionary & Metric Logic
+    <!-- ========================================================= -->
+    <!-- MODAL: AI EMAIL DRAFT VIEWER                              -->
+    <!-- ========================================================= -->
+    <div id="email-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div class="bg-gray-900 border border-purple-500/50 rounded-lg p-6 max-w-2xl w-full shadow-[0_0_30px_rgba(168,85,247,0.2)] transform transition-all">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center">
+                    <span class="h-2 w-2 bg-purple-400 rounded-full mr-2 agent-pulse"></span>
+                    Agentic AI Generated Intervention
+                </h3>
+                <button onclick="document.getElementById('email-modal').classList.add('hidden')" class="text-gray-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <div class="space-y-3 text-sm text-gray-300">
+                <p><strong class="text-gray-400">To:</strong> Assigned CSM Lead</p>
+                <p><strong class="text-gray-400">Subject:</strong> Urgent: Intervention Required for <span id="modal-account" class="text-white font-bold"></span></p>
+                <div class="bg-gray-800/50 p-4 rounded border border-gray-700 mt-2">
+                    <p id="modal-body" class="whitespace-pre-line leading-relaxed text-[13px]"></p>
                 </div>
-                <button class="close-btn" onclick="toggleGlossary()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-            </div>
-            
-            <div class="term-group">
-                <div class="term-title">Portfolio Contracted ARR</div>
-                <div class="term-def">The point-in-time active baseline of booked revenue. The pipeline automatically deduplicates overlapping or superseded mid-year expansions to prevent artificial inflation of the baseline.</div>
-            </div>
-            <div class="term-group">
-                <div class="term-title">Activated ARR (aARR)</div>
-                <div class="term-def">Contracted revenue associated with accounts that have consumed 50% or more of their prorated 90-day compute credits, or are currently in the 45-day onboarding grace period.</div>
-            </div>
-            <div class="term-group">
-                <div class="term-title">Unactivated Risk ARR</div>
-                <div class="term-def">Revenue associated with accounts falling below the 50% activation threshold. These accounts are mathematically modeled as high churn risks.</div>
-            </div>
-            <div class="term-group">
-                <div class="term-title">CSM Pulse vs System Status</div>
-                <div class="term-def"><strong>CSM Pulse</strong> represents the qualitative legacy health score input by a rep. <strong>System Status</strong> represents the quantitative mathematical reality of credit consumption. The Agent searches for contradictions between the two.</div>
-            </div>
-            <div class="term-group">
-                <div class="term-title">Technical Health (Derived)</div>
-                <div class="term-def">Technical health (support tickets) is mathematically derived from the CSM Pulse rating. Red pulse indicates active Sev-1 blocker tickets; Green pulse indicates zero active critical tickets.</div>
+                <div class="mt-4 pt-4 flex justify-end space-x-3">
+                    <button onclick="document.getElementById('email-modal').classList.add('hidden')" class="px-4 py-2 bg-gray-800 text-white rounded text-xs font-semibold hover:bg-gray-700 transition-colors">Discard Draft</button>
+                    <button onclick="alert('Sent to CSM Queue!'); document.getElementById('email-modal').classList.add('hidden')" class="px-4 py-2 bg-purple-600 text-white rounded text-xs font-bold hover:bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)] transition-all">Approve & Send Draft</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        let velocityChart = null;
-        let anomalyChart = null;
-        let currentSortCol = -1;
-        let currentSortAsc = true;
+        // =====================================================================
+        // 1. LIVE FLASK API INTEGRATION
+        // =====================================================================
+        const formatCurrency = (value) => {
+            if (!value || isNaN(value)) return "$0.00M";
+            return "$" + (Number(value) / 1000000).toFixed(2) + "M";
+        };
 
-        function parseCurrency(str) { return parseFloat(str.replace(/[^0-9.-]+/g,"")); }
-        Chart.defaults.color = '#94a3b8';
-        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-
-        function switchView(view) {
-            const btns = document.querySelectorAll('.tab-btn');
-            btns.forEach(b => b.classList.remove('active'));
-            if(view === 'executive') {
-                btns[0].classList.add('active');
-                document.getElementById('executive-view').style.display = 'block';
-                document.getElementById('sentinel-view').style.display = 'none';
-            } else {
-                btns[1].classList.add('active');
-                document.getElementById('executive-view').style.display = 'none';
-                document.getElementById('sentinel-view').style.display = 'block';
-            }
-        }
-
-        // TOGGLE GLOSSARY MODAL
-        function toggleGlossary() {
-            const modal = document.getElementById('glossary-modal');
-            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
-        }
-
-        // MASTER FILTER CONTROLLER
-        async function applyFilters() {
-            const q = document.getElementById('filter-quarter').value;
-            const r = document.getElementById('filter-region').value;
-            const s = document.getElementById('filter-segment').value;
-            
-            const params = `?quarter=${q}&region=${r}&segment=${s}`;
-            
-            try {
-                // 1. Update Top KPIs
-                const kpiResponse = await fetch(`http://127.0.0.1:5000/api/dashboard-metrics${params}`);
-                const kpiData = await kpiResponse.json();
-                document.getElementById('kpi-total-arr').innerText = kpiData.total_arr;
-                document.getElementById('kpi-active-arr').innerText = kpiData.activated_arr;
-                document.getElementById('kpi-risk-arr').innerText = kpiData.risk_arr;
-                document.getElementById('kpi-anomaly-count').innerText = kpiData.anomaly_count;
-
-                // 2. Update Executive Trend Data
-                const execResponse = await fetch(`http://127.0.0.1:5000/api/executive-summary${params}`);
-                const execData = await execResponse.json();
-                
-                let gridHTML = ""; let labels = []; let totalData = []; let activeData = [];
-                execData.forEach(qData => {
-                    let badgeClass = qData.growth.includes('+') ? 'growth-badge' : 'growth-badge negative';
-                    let badgeHTML = qData.quarter.includes("Q1") ? "" : `<div class="${badgeClass}">${qData.growth} QoQ</div>`;
-                    gridHTML += `
-                        <div class="trend-card">
-                            ${badgeHTML}
-                            <div class="trend-quarter">${qData.quarter}</div>
-                            <div class="trend-stat text-green">${qData.activated_arr}</div>
-                            <div class="trend-label">Activated ARR</div>
-                            <div class="trend-stat text-red" style="font-size: 18px;">${qData.risk_arr}</div>
-                            <div class="trend-label">Unactivated Risk</div>
-                        </div>`;
-                    labels.push(qData.quarter); totalData.push(parseCurrency(qData.total_arr)); activeData.push(parseCurrency(qData.activated_arr));
-                });
-                document.getElementById('qoq-grid').innerHTML = gridHTML;
-                renderVelocityChart(labels, totalData, activeData);
-
-                // 3. Update Table Data
-                const tableResponse = await fetch(`http://127.0.0.1:5000/api/table-data${params}`);
-                const tableData = await tableResponse.json();
-                
-                let tbodyHTML = ""; let flagCounts = {};
-                tableData.forEach(row => {
-                    let badgeClass = "badge-success";
-                    if(row.status === "Unactivated") badgeClass = "badge-danger";
-                    if(row.status === "Onboarding") badgeClass = "badge-warning";
-                    
-                    // Map the CSM Pulse text color to a visual dot
-                    let pulseColor = "#94a3b8";
-                    if(row.health_color === "Green") pulseColor = "#10b981";
-                    if(row.health_color === "Yellow") pulseColor = "#f59e0b";
-                    if(row.health_color === "Red") pulseColor = "#e11d48";
-                    
-                    tbodyHTML += `
-                        <tr>
-                            <td><strong>${row.account}</strong></td>
-                            <td data-raw="${row.arr_raw}">${row.arr}</td>
-                            <td data-raw="${parseFloat(row.usage) || 0}">${row.usage}</td>
-                            <td><span class="badge ${badgeClass}">${row.status}</span></td>
-                            <td><span style="color: ${pulseColor}; font-size: 18px; line-height: 0; vertical-align: -2px;">●</span> ${row.health_color || 'Unknown'}</td>
-                            <td style="color: var(--text-muted); font-size: 13px;">${row.tickets}</td>
-                            <td>${row.flag}</td>
-                            <td><button class="${row.btn_style}">${row.action_text}</button></td>
-                        </tr>`;
-
-                    if (row.status === "Unactivated") {
-                        flagCounts[row.flag] = (flagCounts[row.flag] || 0) + 1;
-                    }
-                });
-                
-                if (tableData.length === 0) {
-                    tbodyHTML = `<tr><td colspan="8" style="text-align: center;">No accounts found for this filter combination.</td></tr>`;
-                }
-                
-                document.getElementById('dynamic-table-body').innerHTML = tbodyHTML;
-                renderAnomalyChart(flagCounts);
-                
-                // Reset Sort Arrows (0 through 6)
-                for(let i=0; i<7; i++) {
-                    const icon = document.getElementById(`sort-icon-${i}`);
-                    if(icon) icon.innerText = "↕";
-                }
-                currentSortCol = -1;
-
-            } catch (error) {
-                console.error("Filter update failed", error);
-                document.getElementById('kpi-total-arr').innerText = "API Offline";
-            }
-        }
-
-        // JAVASCRIPT COLUMN SORTING
-        function sortTable(colIndex, isNumber) {
-            const tbody = document.getElementById("dynamic-table-body");
-            const rows = Array.from(tbody.rows);
-            
-            if (rows.length === 0 || rows[0].cells.length === 1) return; 
-            
-            if (currentSortCol === colIndex) {
-                currentSortAsc = !currentSortAsc;
-            } else {
-                currentSortCol = colIndex;
-                currentSortAsc = true;
-            }
-
-            rows.sort((a, b) => {
-                let valA, valB;
-                
-                if (isNumber) {
-                    valA = parseFloat(a.cells[colIndex].getAttribute('data-raw'));
-                    valB = parseFloat(b.cells[colIndex].getAttribute('data-raw'));
-                } else {
-                    valA = a.cells[colIndex].innerText.toLowerCase();
-                    valB = b.cells[colIndex].innerText.toLowerCase();
-                }
-                
-                if (valA < valB) return currentSortAsc ? -1 : 1;
-                if (valA > valB) return currentSortAsc ? 1 : -1;
-                return 0;
-            });
-
-            // Re-inject sorted rows
-            tbody.innerHTML = "";
-            rows.forEach(row => tbody.appendChild(row));
-
-            // Update Header Arrows (0 through 6)
-            for(let i=0; i<7; i++) {
-                const icon = document.getElementById(`sort-icon-${i}`);
-                if (icon) {
-                    if (i === colIndex) {
-                        icon.innerText = currentSortAsc ? "▲" : "▼";
-                    } else {
-                        icon.innerText = "↕";
-                    }
-                }
-            }
-        }
-
-        function renderVelocityChart(labels, totalData, activeData) {
-            const ctx = document.getElementById('velocityChart').getContext('2d');
-            if (velocityChart) velocityChart.destroy();
-            
-            velocityChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Activated ARR ($M)', data: activeData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 3, fill: true, tension: 0.4 },
-                        { label: 'Total Contracted ARR ($M)', data: totalData, borderColor: '#38bdf8', borderWidth: 2, borderDash: [5, 5], pointBackgroundColor: '#0f172a', fill: false, tension: 0.1 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } }, scales: { y: { beginAtZero: true, grid: { color: '#334155' } }, x: { grid: { display: false } } } }
-            });
-        }
-
-        function renderAnomalyChart(flagCounts) {
-            const ctx = document.getElementById('anomalyChart').getContext('2d');
-            if (anomalyChart) anomalyChart.destroy();
-            
-            const labels = Object.keys(flagCounts);
-            const data = Object.values(flagCounts);
-            
-            // STRICT COLOR MAPPING
-            const colorMapping = {
-                "Critical Data Discrepancy": "#e11d48", // Red
-                "Spike & Drop": "#f59e0b",              // Yellow/Orange
-                "Shelfware": "#8b5cf6",                 // Purple
-                "Severe Under-utilization": "#38bdf8",  // Light Blue
-                "Stalled Adoption": "#94a3b8",          // Gray
-                "No Anomalies": "#334155"               // Dark Gray
-            };
-            
-            if (data.length === 0) {
-                labels.push("No Anomalies"); 
-                data.push(1);
-            }
-            
-            const bgColors = labels.map(label => colorMapping[label] || "#475569");
-            
-            anomalyChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: bgColors,
-                        borderWidth: 0, 
-                        hoverOffset: 4
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    cutout: '70%', 
-                    plugins: { 
-                        legend: { position: 'right', labels: { boxWidth: 12 } } 
-                    } 
-                }
-            });
-        }
-
-        async function triggerAgent() {
-            const consoleDiv = document.getElementById('agent-console');
-            const outputDiv = document.getElementById('console-output');
-            consoleDiv.style.display = 'block';
-            outputDiv.innerHTML = '<span style="color: #38bdf8;">[System]</span> Initializing GCS Retention Agent...\n';
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        async function fetchDashboardMetrics() {
+            const quarter = document.getElementById('quarter-filter').value;
+            const region = document.getElementById('region-filter').value;
+            const segment = document.getElementById('segment-filter').value;
+            const url = `http://127.0.0.1:5000/api/dashboard-metrics?quarter=${encodeURIComponent(quarter)}&region=${encodeURIComponent(region)}&segment=${encodeURIComponent(segment)}`;
 
             try {
-                const response = await fetch('http://127.0.0.1:5000/api/run-agent');
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("API Offline");
                 const data = await response.json();
-                if (data.status === "success") {
-                    data.interventions.forEach(item => {
-                        const formattedDraft = item.draft.replace(/\n/g, '<br>');
-                        outputDiv.innerHTML += `
-                            <div class="log-entry">
-                                <div class="log-highlight">🔍 ACCOUNT: ${item.account}</div>
-                                <div class="log-action">⚡ TRIGGERED ACTION: ${item.action}</div>
-                                <div class="log-draft"><strong>📝 DRAFTED COMMUNICATION:</strong><br>${formattedDraft}</div>
-                            </div>`;
-                    });
-                }
+
+                document.getElementById('portfolio-arr').innerText = formatCurrency(data.portfolio_arr || data.contracted_arr || 0);
+                document.getElementById('activated-arr').innerText = formatCurrency(data.activated_arr || data.active_arr || 0);
+                document.getElementById('unactivated-arr').innerText = formatCurrency(data.unactivated_risk_arr || data.risk_arr || 0);
+                document.getElementById('interventions').innerText = (data.agentic_interventions || data.interventions || 0) + " Accounts";
             } catch (error) {
-                outputDiv.innerHTML += '\n<span style="color: #e11d48;">[Error]</span> Connection failed. Make sure agent_api.py is running.';
+                console.error("Error fetching metrics:", error);
             }
         }
 
-        // Initialize App on load
-        window.onload = applyFilters;
+        document.getElementById('quarter-filter').addEventListener('change', fetchDashboardMetrics);
+        document.getElementById('region-filter').addEventListener('change', fetchDashboardMetrics);
+        document.getElementById('segment-filter').addEventListener('change', fetchDashboardMetrics);
+
+        // =====================================================================
+        // 2. TAB SWITCHER
+        // =====================================================================
+        function switchTab(tab) {
+            const viewExec = document.getElementById('view-executive');
+            const viewRoll = document.getElementById('view-rolling');
+            const btnExec = document.getElementById('btn-executive');
+            const btnRoll = document.getElementById('btn-rolling');
+
+            if (tab === 'executive') {
+                viewExec.classList.remove('hidden');
+                viewRoll.classList.add('hidden');
+                btnExec.className = "tab-active px-4 py-1.5 rounded text-sm font-semibold transition-colors cursor-pointer shadow-lg";
+                btnRoll.className = "tab-inactive px-4 py-1.5 rounded text-sm font-semibold transition-colors cursor-pointer hover:bg-gray-600";
+            } else {
+                viewExec.classList.add('hidden');
+                viewRoll.classList.remove('hidden');
+                btnRoll.className = "tab-active bg-red-600 px-4 py-1.5 rounded text-sm font-semibold transition-colors cursor-pointer shadow-lg";
+                btnExec.className = "tab-inactive px-4 py-1.5 rounded text-sm font-semibold transition-colors cursor-pointer hover:bg-gray-600";
+            }
+        }
+
+        // =====================================================================
+        // 3. SYNTHETIC QUEUE GENERATOR
+        // =====================================================================
+        const prefixes = ['Acme', 'GlobalTech', 'CyberDyne', 'Nexus', 'Initech', 'Stark', 'Wayne', 'Umbrella', 'Massive', 'Dynamic', 'Aperture', 'Zenith', 'Nova', 'Omni', 'Vertex'];
+        const suffixes = ['Corp', 'Inc', 'Systems', 'Health', 'Dynamics', 'Tech', 'Solutions', 'Logistics', 'Networks', 'LLC'];
+        const regions = ['AMER', 'EMEA', 'APAC', 'LATAM'];
+        const severities = [
+            { text: "Severe Drop", color: "red" },
+            { text: "API Inactive", color: "red" },
+            { text: "High Risk", color: "amber" },
+            { text: "License Limit", color: "amber" },
+            { text: "Stagnant", color: "blue" }
+        ];
+
+        let totalInterventions = 18;
+
+        function generateAccountQueue() {
+            const tbody = document.getElementById('agent-triage-queue');
+            let rowsHtml = '';
+            
+            for(let i = 0; i < 362; i++) {
+                const name = prefixes[Math.floor(Math.random()*prefixes.length)] + ' ' + suffixes[Math.floor(Math.random()*suffixes.length)];
+                const region = regions[Math.floor(Math.random()*regions.length)];
+                const arr = (Math.random() * 2.5 + 0.1).toFixed(2) + 'M';
+                
+                const severityObj = severities[Math.floor(Math.random()*severities.length)];
+                let health = 0;
+                if(severityObj.color === "red") health = Math.floor(Math.random() * 15) + 10; 
+                else if(severityObj.color === "amber") health = Math.floor(Math.random() * 20) + 26; 
+                else health = Math.floor(Math.random() * 15) + 47; 
+
+                rowsHtml += `
+                <tr id="row-${i}" class="hover:bg-gray-800/40 transition-all duration-300 border-b border-gray-800/50">
+                    <td class="py-3 px-2 font-medium text-white text-[13px] account-name-cell">${name}</td>
+                    <td class="py-3 px-2 text-[13px] text-gray-300">${region}</td>
+                    <td class="py-3 px-2 text-white font-semibold text-[13px]">$${arr}</td>
+                    <td class="py-3 px-2">
+                        <span class="bg-${severityObj.color}-900/20 text-${severityObj.color}-400 border border-${severityObj.color}-500/50 px-2 py-0.5 rounded text-[11px] font-bold tracking-wide">${health} / 100</span>
+                    </td>
+                    <td class="py-3 px-2">
+                        <span class="bg-${severityObj.color}-900/20 text-${severityObj.color}-400 border border-${severityObj.color}-500/50 px-2 py-0.5 rounded text-[11px] tracking-wide">${severityObj.text}</span>
+                    </td>
+                    <td class="py-3 px-2 agent-status-col w-48">
+                        <div class="flex items-center text-purple-400 text-[12px]">
+                            <svg class="animate-spin -ml-1 mr-2 h-3.5 w-3.5 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            Agent Working...
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }
+            tbody.innerHTML = rowsHtml;
+        }
+
+        // =====================================================================
+        // 4. LIVE AGENT SIMULATOR WITH EMAIL DRAFTING
+        // =====================================================================
+        const agentActions = ["Email Draft Ready", "Playbook Deployed", "Discount Auto-Approved"];
+        
+        function showDraftModal(accountName, actionText) {
+            document.getElementById('modal-account').innerText = accountName;
+            
+            let body = "";
+            if(actionText.includes("Email")) {
+                body = `Hi Team,\n\nOur Sentinel AI has detected a critical anomaly in telemetry adoption for ${accountName} over the last 48 hours.\n\nRecommended Action: Reach out immediately to the primary admin to verify their API key configuration. I have prepared a template for you in Outreach.\n\nPlease review and approve the next steps.`;
+            } else if (actionText.includes("Discount")) {
+                 body = `Hi Team,\n\n${accountName} is approaching their license limit and showing signs of stagnant growth. \n\nSentinel AI has pre-approved a 15% expansion discount for their next renewal. The CPQ quote has been automatically generated in Salesforce.\n\nClick 'Approve & Send' to notify the AE.`;
+            } else {
+                 body = `Hi Team,\n\nSentinel AI has automatically deployed the 'Stalled Adoption' playbook for ${accountName}. \n\nTasks have been queued in Salesforce for the technical account manager to schedule a health check call this week.`;
+            }
+            
+            document.getElementById('modal-body').innerText = body;
+            document.getElementById('email-modal').classList.remove('hidden');
+        }
+
+        function activateLiveAgent() {
+            setInterval(() => {
+                // Focus on the top 15 visible rows
+                const rowIndex = Math.floor(Math.random() * 15); 
+                const row = document.getElementById(`row-${rowIndex}`);
+                if(!row) return;
+
+                const statusCol = row.querySelector('.agent-status-col');
+                const accountName = row.querySelector('.account-name-cell').innerText;
+                
+                if(statusCol && statusCol.innerHTML.includes('Agent Working...')) {
+                    
+                    // PHASE 1: Agent switches from "Working" to "Drafting"
+                    statusCol.innerHTML = `
+                        <div class="flex items-center text-blue-400 text-[12px]">
+                            <svg class="animate-spin -ml-1 mr-2 h-3.5 w-3.5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            Drafting Payload...
+                        </div>
+                    `;
+                    
+                    // PHASE 2: Agent finishes drafting and makes it a clickable link
+                    setTimeout(() => {
+                        const action = agentActions[Math.floor(Math.random() * agentActions.length)];
+                        
+                        statusCol.innerHTML = `
+                            <div onclick="showDraftModal('${accountName}', '${action}')" class="flex items-center text-emerald-400 text-[12px] font-bold tracking-wide cursor-pointer hover:text-emerald-300 transition-colors" title="Click to view AI Draft">
+                                <svg class="w-4 h-4 mr-1 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                <span class="border-b border-emerald-500/50 hover:border-emerald-400 border-dashed">${action}</span>
+                            </div>
+                        `;
+                        
+                        row.classList.add('bg-purple-900/30');
+                        setTimeout(() => row.classList.remove('bg-purple-900/30'), 1500);
+
+                        totalInterventions++;
+                        document.getElementById('rolling-interventions').innerText = totalInterventions + " Accounts";
+                    }, 1800); // Takes 1.8 seconds to "Draft"
+                }
+            }, 1800); 
+        }
+
+        // Initialize Everything
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchDashboardMetrics();
+            generateAccountQueue();
+            setTimeout(activateLiveAgent, 2000); 
+        });
+
+        // =====================================================================
+        // 5. EXECUTIVE TAB CHARTS
+        // =====================================================================
+        const ctxLine = document.getElementById('lineChartExec').getContext('2d');
+        new Chart(ctxLine, {
+            type: 'line',
+            data: {
+                labels: ['Q1 2026', 'Q2 2026', 'Q3 2026', 'Q4 2026'],
+                datasets: [
+                    { label: 'Activated ARR ($M)', data: [110.51, 110.51, 110.51, 110.51], borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2, tension: 0.1 },
+                    { label: 'Total Contracted ARR ($M)', data: [300, 300, 300, 300], borderColor: '#3b82f6', borderDash: [5, 5], borderWidth: 2, tension: 0.1 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#9ca3af' } } }, scales: { y: { grid: { color: '#374151' }, ticks: { color: '#9ca3af' }, min: 0, max: 350 }, x: { grid: { display: false }, ticks: { color: '#9ca3af' } } } }
+        });
+
+        const ctxPie = document.getElementById('pieChartExec').getContext('2d');
+        new Chart(ctxPie, {
+            type: 'doughnut',
+            data: {
+                labels: ['Spike & Drop', 'Critical Data Discrepancy', 'Stalled Adoption', 'Severe Under-utilization'],
+                datasets: [{ data: [2, 3, 10, 85], backgroundColor: ['#f97316', '#ef4444', '#9ca3af', '#3ea8ff'], borderWidth: 0 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { color: '#9ca3af', boxWidth: 12 } } } }
+        });
     </script>
 </body>
 </html>
