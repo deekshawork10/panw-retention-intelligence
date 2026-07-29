@@ -125,11 +125,11 @@ for i in range(16):
 
 df_logs = pd.DataFrame(log_data)
 
-# Export to CSV
+# Export to CSV (Fixed capitalization to Daily_Usage_Logs.csv)
 print("\nExporting datasets to CSV...")
 df_csm.to_csv('csm_rep_data.csv', index=False)
 df_accounts.to_csv('accounts_data.csv', index=False)
 df_contracts.to_csv('contracts_data.csv', index=False)
-df_logs.to_csv('daily_usage_logs.csv', index=False)
+df_logs.to_csv('Daily_Usage_Logs.csv', index=False)
 
 print(f"✅ Success! Generated {len(df_accounts)} Accounts, {len(df_contracts)} Contracts, and {len(df_logs)} Usage Logs.")
