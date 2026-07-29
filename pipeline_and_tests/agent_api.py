@@ -3,6 +3,9 @@ from flask_cors import CORS
 import pandas as pd
 import time
 
+# IMPORT YOUR DYNAMIC AGENT LOGIC HERE
+from anomaly_agent import run_agentic_sentinel as run_dynamic_agent
+
 app = Flask(__name__)
 CORS(app)
 
@@ -11,7 +14,7 @@ print("⚙️ Initializing Data Engine & Reading Bulk CSVs...")
 try:
     df_accounts = pd.read_csv('accounts_data.csv')
     df_contracts = pd.read_csv('contracts_data.csv')
-    df_logs = pd.read_csv('daily_usage_logs.csv')
+    df_logs = pd.read_csv('Daily_Usage_Logs.csv') # Fixed casing
     df_csm = pd.read_csv('csm_rep_data.csv') 
     df_health = pd.read_csv('account_health_data.csv') 
     
@@ -194,13 +197,12 @@ def get_table_data():
     return jsonify(table_rows)
 
 @app.route('/api/run-agent', methods=['GET'])
-def run_agentic_sentinel():
-    results = [
-        {"account": "Ghost LLC", "action": "Triggered Data Integrity Audit.", "draft": "Subject: URGENT - False Positive Discrepancy Detected\nContext: CSM marked Account Health as GREEN, but back-end consumption logs show 0% utilization. Routing to RevOps to audit health score validity."},
-        {"account": "Spike Inc", "action": "Escalated to Technical Account Manager (TAM).", "draft": "Subject: Adoption Stalled - Spike Inc\nContext: Usage dropped heavily. TAM to review migration logs for technical blockers."}
-    ]
-    time.sleep(1.5)
-    return jsonify({"status": "success", "interventions": results})
+def run_agentic_sentinel_route():
+    # EXECUTING THE REAL DYNAMIC PYTHON SCRIPT
+    results = run_dynamic_agent()
+    
+    time.sleep(1.5) # Theatrical pause for demo effect
+    return jsonify(results)
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
